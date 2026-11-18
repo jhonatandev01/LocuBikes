@@ -1,0 +1,8 @@
+{
+  "name": "LocuBikes",
+  "description": "Plataforma minimalista para gerenciamento de frota de bicicletas, aluguel para clientes e pagamentos.",
+  "requestFramePermissions": [],
+  "majorCapabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ]
+}
