@@ -26,6 +26,7 @@ import {
 } from '../utils/mobility';
 import { formatCurrencyBRL } from '../utils/pricing';
 import { BikeImage } from './BikeImage';
+import { DeliveryPartnersMarquee } from './DeliveryPartnersMarquee';
 
 interface CustomerMapViewProps {
   bikes: Bike[];
@@ -292,12 +293,16 @@ export function CustomerMapView({
   const userPoint = project(userCoords.lat, userCoords.lng);
 
   return (
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-5 sm:py-8 space-y-6">
+    <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-5 sm:py-8 space-y-6">
+      <div
+        aria-hidden="true"
+        className="pointer-events-none absolute top-0 left-1/2 -translate-x-1/2 w-[min(92vw,760px)] h-44 rounded-full bg-emerald-400/10 dark:bg-emerald-500/10 blur-3xl -z-10"
+      />
       {/* Live Active Ride Banner */}
       {activeRide && (
         <section
           aria-label="Viagem em andamento"
-          className="bg-zinc-900 dark:bg-zinc-900 text-white border border-zinc-800 dark:border-emerald-700/60 rounded-2xl p-5 sm:p-6 space-y-5"
+          className="bg-zinc-900 text-white border border-zinc-800 dark:border-emerald-700/60 rounded-2xl p-5 sm:p-6 space-y-5 card-elevated"
         >
           <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
             <div className="space-y-1">
@@ -516,7 +521,7 @@ export function CustomerMapView({
         <div className="lg:col-span-8 flex flex-col gap-4">
           <div
             data-testid="interactive-bike-map"
-            className="relative w-full h-[380px] sm:h-[460px] lg:h-[520px] rounded-2xl overflow-hidden border border-zinc-200 dark:border-zinc-800 bg-[#eef1ee] dark:bg-[#111615] select-none touch-none"
+            className="relative w-full h-[380px] sm:h-[460px] lg:h-[520px] rounded-2xl overflow-hidden border border-zinc-200/90 dark:border-zinc-800 bg-[#eef1ee] dark:bg-[#111615] select-none touch-none card-elevated"
             onPointerDown={(e) => {
               if ((e.target as HTMLElement).closest('button')) return;
               dragRef.current = {
@@ -728,7 +733,7 @@ export function CustomerMapView({
 
           {/* Selected Bike / Station Spotlight Card */}
           {selectedBike ? (
-            <div className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-2xl p-4 sm:p-5 flex flex-col sm:flex-row items-stretch sm:items-center gap-4">
+            <div className="bg-white dark:bg-zinc-900 border border-zinc-200/90 dark:border-zinc-800 rounded-2xl p-4 sm:p-5 flex flex-col sm:flex-row items-stretch sm:items-center gap-4 card-elevated card-lift">
               <div className="w-full sm:w-36 h-28 rounded-xl overflow-hidden shrink-0">
                 <BikeImage
                   src={selectedBike.imageUrl}
@@ -796,7 +801,7 @@ export function CustomerMapView({
         {/* Nearby Stations & Bikes List */}
         <aside
           aria-label="Estações e bicicletas mais próximas"
-          className="lg:col-span-4 bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-2xl p-4 sm:p-5 flex flex-col gap-4 max-h-[640px] overflow-y-auto"
+          className="lg:col-span-4 bg-white dark:bg-zinc-900 border border-zinc-200/90 dark:border-zinc-800 rounded-2xl p-4 sm:p-5 flex flex-col gap-4 max-h-[640px] overflow-y-auto card-elevated"
         >
           <div className="flex items-center justify-between gap-2">
             <div>
@@ -885,6 +890,15 @@ export function CustomerMapView({
           </div>
         </aside>
       </div>
+
+      {/* Moving Delivery Apps Showcase for Couriers */}
+      <DeliveryPartnersMarquee
+        onSelectCategory={(category) => {
+          setCategoryFilter(category);
+          window.scrollTo({ top: 0, behavior: 'smooth' });
+        }}
+        onOpenPlans={onOpenWallet}
+      />
     </div>
   );
 }

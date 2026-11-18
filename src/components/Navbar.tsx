@@ -53,7 +53,7 @@ export function Navbar({
   };
 
   return (
-    <header className="sticky top-0 z-30 bg-white/95 dark:bg-zinc-950/95 backdrop-blur-sm border-b border-zinc-200 dark:border-zinc-800 transition-colors duration-200">
+    <header className="sticky top-0 z-30 bg-white/80 dark:bg-zinc-950/80 surface-glass border-b border-zinc-200/80 dark:border-zinc-800/80 shadow-[0_6px_24px_-14px_rgba(9,9,11,0.12)] dark:shadow-[0_10px_28px_-14px_rgba(0,0,0,0.65)] transition-colors duration-200">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-14 md:h-16 flex items-center justify-between gap-8">
         {/* Zone 1: Linked LocuBikes logo */}
         <button

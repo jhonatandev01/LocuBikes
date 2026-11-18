@@ -99,7 +99,7 @@ async function startServer() {
   // Customer Wallet, Saved Cards, Subscriptions & QR Ride endpoints
   app.post('/api/customer/wallet/topup', (req, res) => {
     try {
-      const { amount, method } = req.body as { amount?: number; method?: 'pix' | 'cartao' };
+      const { amount, method } = req.body as { amount?: number; method?: 'pix' | 'cartao' | 'nupay' };
       const result = topUpCustomerWallet(Number(amount), method || 'pix');
       res.json(result);
     } catch (error) {
@@ -129,7 +129,7 @@ async function startServer() {
     try {
       const { planId, paymentMethod } = req.body as {
         planId: 'mensal-urbano' | 'mensal-eletrico';
-        paymentMethod: 'carteira' | 'pix' | 'cartao';
+        paymentMethod: 'carteira' | 'pix' | 'cartao' | 'nupay';
       };
       const customerAccount = subscribeCustomerPlan(planId, paymentMethod || 'carteira');
       res.status(201).json({ customerAccount });
@@ -151,7 +151,7 @@ async function startServer() {
     try {
       const { qrInput, paymentMethod } = req.body as {
         qrInput?: string;
-        paymentMethod?: 'carteira' | 'pix' | 'cartao' | 'assinatura';
+        paymentMethod?: 'carteira' | 'pix' | 'cartao' | 'nupay' | 'assinatura';
       };
       const result = unlockBikeByQr({
         qrInput: qrInput || '',

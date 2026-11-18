@@ -666,7 +666,8 @@ export function createRental(input: CreateRentalInput): { rental: Rental; transa
 
   const codeNumber = 4820 + db.rentals.length + Math.floor(Math.random() * 80);
   const reservationCode = `LOC-${codeNumber}`;
-  const isImmediatePay = input.paymentMethod === 'pix' || input.paymentMethod === 'cartao';
+  const isImmediatePay =
+    input.paymentMethod === 'pix' || input.paymentMethod === 'cartao' || input.paymentMethod === 'nupay';
   const nowIso = new Date().toISOString();
 
   const rental: Rental = {
@@ -687,7 +688,10 @@ export function createRental(input: CreateRentalInput): { rental: Rental; transa
     includeInsurance: Boolean(input.includeInsurance),
     includePhoneMount: Boolean(input.includePhoneMount),
     paymentMethod: input.paymentMethod,
-    installments: input.paymentMethod === 'cartao' ? Math.max(1, Math.min(6, input.installments || 1)) : 1,
+    installments:
+      input.paymentMethod === 'cartao' || input.paymentMethod === 'nupay'
+        ? Math.max(1, Math.min(12, input.installments || 1))
+        : 1,
     paymentStatus: isImmediatePay ? 'pago' : 'pendente',
     rentalStatus: isImmediatePay ? 'ativa' : 'pendente',
     subtotal: breakdown.subtotal,
@@ -748,7 +752,8 @@ export function settleRentalPayment(
   const updatedRental: Rental = {
     ...rental,
     paymentMethod: method,
-    installments: method === 'cartao' ? Math.max(1, Math.min(6, installments)) : 1,
+    installments:
+      method === 'cartao' || method === 'nupay' ? Math.max(1, Math.min(12, installments)) : 1,
     paymentStatus: 'pago',
     rentalStatus: 'ativa',
     pixCode: method === 'pix' ? generatePixPayload(rental.reservationCode, rental.totalAmount) : rental.pixCode,
@@ -874,7 +879,7 @@ export function cancelRental(rentalId: string): Rental {
 
 export function topUpCustomerWallet(
   amount: number,
-  method: 'pix' | 'cartao'
+  method: 'pix' | 'cartao' | 'nupay'
 ): { customerAccount: CustomerAccountState; transaction: Transaction } {
   if (!Number.isFinite(amount) || amount < 10 || amount > 1000) {
     throw new Error('Informe um valor entre R$ 10,00 e R$ 1.000,00 para recarga.');
@@ -948,7 +953,7 @@ export function removeCustomerCard(cardId: string): CustomerAccountState {
 
 export function subscribeCustomerPlan(
   planId: SubscriptionPlan['id'],
-  paymentMethod: 'carteira' | 'pix' | 'cartao'
+  paymentMethod: 'carteira' | 'pix' | 'cartao' | 'nupay'
 ): CustomerAccountState {
   const plan = SUBSCRIPTION_PLANS.find((p) => p.id === planId);
   if (!plan) {
@@ -1006,7 +1011,7 @@ export function cancelCustomerSubscription(): CustomerAccountState {
 
 export function unlockBikeByQr(input: {
   qrInput: string;
-  paymentMethod: 'carteira' | 'pix' | 'cartao' | 'assinatura';
+  paymentMethod: 'carteira' | 'pix' | 'cartao' | 'nupay' | 'assinatura';
 }): { activeRide: RideRecord; bike: Bike; customerAccount: CustomerAccountState } {
   const parsedCode = parseBikeQrCode(input.qrInput);
   if (!parsedCode) {

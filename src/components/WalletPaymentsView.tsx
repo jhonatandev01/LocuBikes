@@ -8,11 +8,12 @@ import {
   generatePixPayload,
   validateCardPayment,
 } from '../utils/pricing';
+import { NuPayCheckoutModal } from './NuPayCheckoutModal';
 import { PixQrCode } from './PixQrCode';
 
 interface WalletPaymentsViewProps {
   customerAccount: CustomerAccountState;
-  onTopUpWallet: (amount: number, method: 'pix' | 'cartao') => Promise<void>;
+  onTopUpWallet: (amount: number, method: 'pix' | 'cartao' | 'nupay') => Promise<void>;
   onAddCard: (input: {
     cardNumber: string;
     cardHolder: string;
@@ -22,7 +23,7 @@ interface WalletPaymentsViewProps {
   onRemoveCard: (cardId: string) => Promise<void>;
   onSubscribePlan: (
     planId: SubscriptionPlan['id'],
-    paymentMethod: 'carteira' | 'pix' | 'cartao'
+    paymentMethod: 'carteira' | 'pix' | 'cartao' | 'nupay'
   ) => Promise<void>;
   onCancelSubscription: () => Promise<void>;
 }
@@ -38,9 +39,17 @@ export function WalletPaymentsView({
   onCancelSubscription,
 }: WalletPaymentsViewProps) {
   const [topUpAmount, setTopUpAmount] = useState(50);
-  const [topUpMethod, setTopUpMethod] = useState<'pix' | 'cartao'>('pix');
+  const [topUpMethod, setTopUpMethod] = useState<'pix' | 'cartao' | 'nupay'>('pix');
   const [topUpPixPreview, setTopUpPixPreview] = useState<string | null>(null);
   const [topUpBusy, setTopUpBusy] = useState(false);
+
+  const [nuPayPrompt, setNuPayPrompt] = useState<{
+    amount: number;
+    title: string;
+    subtitle: string;
+    kind: 'topup' | 'sub';
+    planId?: SubscriptionPlan['id'];
+  } | null>(null);
 
   const [showCardForm, setShowCardForm] = useState(false);
   const [cardNumber, setCardNumber] = useState('');
@@ -50,15 +59,25 @@ export function WalletPaymentsView({
   const [cardErrors, setCardErrors] = useState<Record<string, string>>({});
   const [cardBusy, setCardBusy] = useState(false);
 
-  const [subPaymentMethod, setSubPaymentMethod] = useState<'carteira' | 'pix' | 'cartao'>(
-    'carteira'
-  );
+  const [subPaymentMethod, setSubPaymentMethod] = useState<
+    'carteira' | 'pix' | 'cartao' | 'nupay'
+  >('carteira');
   const [subBusyId, setSubBusyId] = useState<string | null>(null);
 
   const [feedback, setFeedback] = useState<{ type: 'ok' | 'err'; text: string } | null>(null);
 
   const handleConfirmTopUp = async () => {
     setFeedback(null);
+    if (topUpMethod === 'nupay') {
+      setNuPayPrompt({
+        amount: topUpAmount,
+        title: 'Recarga Carteira Digital LocuBikes',
+        subtitle: 'Crédito imediato para corridas e passes',
+        kind: 'topup',
+      });
+      return;
+    }
+
     if (topUpMethod === 'pix' && !topUpPixPreview) {
       setTopUpPixPreview(generatePixPayload(`WALLET${topUpAmount}`, topUpAmount));
       return;
@@ -119,8 +138,22 @@ export function WalletPaymentsView({
   };
 
   const handleSubscribe = async (planId: SubscriptionPlan['id']) => {
-    setSubBusyId(planId);
     setFeedback(null);
+    if (subPaymentMethod === 'nupay') {
+      const plan = customerAccount.subscriptionPlans.find((p) => p.id === planId);
+      if (plan) {
+        setNuPayPrompt({
+          amount: plan.priceMonthly,
+          title: `Assinatura · ${plan.name}`,
+          subtitle: `Renovação mensal · ${plan.freeMinutesPerRide} min livres por viagem`,
+          kind: 'sub',
+          planId: plan.id,
+        });
+        return;
+      }
+    }
+
+    setSubBusyId(planId);
     try {
       await onSubscribePlan(planId, subPaymentMethod);
       setFeedback({ type: 'ok', text: 'Assinatura mensal ativada com sucesso.' });
@@ -135,7 +168,11 @@ export function WalletPaymentsView({
   };
 
   return (
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8">
+    <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8">
+      <div
+        aria-hidden="true"
+        className="pointer-events-none absolute top-0 right-12 w-72 h-44 rounded-full bg-[#820AD1]/10 blur-3xl -z-10"
+      />
       <div>
         <h1 className="font-display text-2xl sm:text-3xl font-semibold tracking-tight text-zinc-900 dark:text-zinc-50">
           Carteira e Pagamentos
@@ -161,7 +198,7 @@ export function WalletPaymentsView({
       {/* Top Grid: Digital Wallet + Saved Cards */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
         {/* Digital Wallet & Top-up */}
-        <section className="lg:col-span-6 bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-2xl p-6 space-y-6">
+        <section className="lg:col-span-6 bg-white dark:bg-zinc-900 border border-zinc-200/90 dark:border-zinc-800 rounded-2xl p-6 space-y-6 card-elevated">
           <div className="flex items-start justify-between gap-4">
             <div>
               <p className="text-xs text-zinc-500 dark:text-zinc-400 flex items-center gap-1.5">
@@ -201,7 +238,7 @@ export function WalletPaymentsView({
               ))}
             </div>
 
-            <div className="grid grid-cols-2 gap-2.5 pt-1">
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5 pt-1">
               <button
                 type="button"
                 onClick={() => {
@@ -219,6 +256,23 @@ export function WalletPaymentsView({
               <button
                 type="button"
                 onClick={() => {
+                  setTopUpMethod('nupay');
+                  setTopUpPixPreview(null);
+                }}
+                className={`min-h-[44px] px-3 py-2 rounded-xl border text-xs font-semibold transition-all flex items-center justify-center gap-1.5 ${
+                  topUpMethod === 'nupay'
+                    ? 'border-[#820AD1] bg-purple-50 dark:bg-[#240C3D] text-[#820AD1] dark:text-purple-200 shadow-[0_8px_20px_-10px_rgba(130,10,209,0.45)]'
+                    : 'border-zinc-200 dark:border-zinc-800 text-zinc-600 dark:text-zinc-400 hover:border-purple-400'
+                }`}
+              >
+                <span className="px-1.5 py-0.5 rounded bg-[#820AD1] text-white font-display text-[10px] font-bold">
+                  Nu
+                </span>
+                NuPay (Nubank)
+              </button>
+              <button
+                type="button"
+                onClick={() => {
                   setTopUpMethod('cartao');
                   setTopUpPixPreview(null);
                 }}
@@ -228,7 +282,7 @@ export function WalletPaymentsView({
                     : 'border-zinc-200 dark:border-zinc-800 text-zinc-600 dark:text-zinc-400'
                 }`}
               >
-                Via Cartão cadastrado
+                Cartão cadastrado
               </button>
             </div>
 
@@ -250,19 +304,25 @@ export function WalletPaymentsView({
               type="button"
               disabled={topUpBusy}
               onClick={handleConfirmTopUp}
-              className="w-full min-h-[44px] px-4 py-2.5 text-xs font-semibold text-white dark:text-zinc-950 bg-zinc-900 dark:bg-emerald-400 hover:bg-zinc-800 dark:hover:bg-emerald-300 disabled:opacity-60 rounded-xl transition-colors"
+              className={`w-full min-h-[44px] px-4 py-2.5 text-xs font-semibold disabled:opacity-60 rounded-xl transition-all ${
+                topUpMethod === 'nupay'
+                  ? 'text-white bg-[#820AD1] hover:bg-[#6D08B0] shadow-[0_10px_24px_-10px_rgba(130,10,209,0.65)]'
+                  : 'text-white dark:text-zinc-950 bg-zinc-900 dark:bg-emerald-400 hover:bg-zinc-800 dark:hover:bg-emerald-300'
+              }`}
             >
               {topUpBusy
                 ? 'Processando...'
-                : topUpMethod === 'pix' && !topUpPixPreview
-                  ? `Gerar PIX de ${formatCurrencyBRL(topUpAmount)}`
-                  : `Confirmar recarga de ${formatCurrencyBRL(topUpAmount)}`}
+                : topUpMethod === 'nupay'
+                  ? `Pagar ${formatCurrencyBRL(topUpAmount)} com NuPay`
+                  : topUpMethod === 'pix' && !topUpPixPreview
+                    ? `Gerar PIX de ${formatCurrencyBRL(topUpAmount)}`
+                    : `Confirmar recarga de ${formatCurrencyBRL(topUpAmount)}`}
             </button>
           </div>
         </section>
 
         {/* Saved Credit Cards */}
-        <section className="lg:col-span-6 bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-2xl p-6 space-y-5">
+        <section className="lg:col-span-6 bg-white dark:bg-zinc-900 border border-zinc-200/90 dark:border-zinc-800 rounded-2xl p-6 space-y-5 card-elevated">
           <div className="flex items-center justify-between gap-4">
             <div>
               <h2 className="font-display text-lg font-semibold text-zinc-900 dark:text-zinc-50 flex items-center gap-2">
@@ -443,11 +503,14 @@ export function WalletPaymentsView({
               aria-label="Forma de pagamento para assinatura"
               value={subPaymentMethod}
               onChange={(e) =>
-                setSubPaymentMethod(e.target.value as 'carteira' | 'pix' | 'cartao')
+                setSubPaymentMethod(
+                  e.target.value as 'carteira' | 'pix' | 'cartao' | 'nupay'
+                )
               }
               className="h-10 pl-3 pr-8 text-xs font-medium bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-xl text-zinc-800 dark:text-zinc-100"
             >
               <option value="carteira">Carteira Digital</option>
+              <option value="nupay">NuPay (Nubank)</option>
               <option value="pix">PIX</option>
               <option value="cartao">Cartão Cadastrado</option>
             </select>
@@ -460,10 +523,10 @@ export function WalletPaymentsView({
             return (
               <div
                 key={plan.id}
-                className={`bg-white dark:bg-zinc-900 border rounded-2xl p-6 flex flex-col justify-between gap-6 ${
+                className={`bg-white dark:bg-zinc-900 border rounded-2xl p-6 flex flex-col justify-between gap-6 card-elevated card-lift ${
                   isActivePlan
                     ? 'border-emerald-500 dark:border-emerald-400'
-                    : 'border-zinc-200 dark:border-zinc-800'
+                    : 'border-zinc-200/90 dark:border-zinc-800'
                 }`}
               >
                 <div className="space-y-3">
@@ -520,6 +583,32 @@ export function WalletPaymentsView({
           })}
         </div>
       </section>
+
+      {nuPayPrompt && (
+        <NuPayCheckoutModal
+          open={Boolean(nuPayPrompt)}
+          amount={nuPayPrompt.amount}
+          title={nuPayPrompt.title}
+          subtitle={nuPayPrompt.subtitle}
+          allowInstallments={false}
+          onClose={() => setNuPayPrompt(null)}
+          onAuthorize={async (confirmation) => {
+            if (nuPayPrompt.kind === 'topup') {
+              await onTopUpWallet(nuPayPrompt.amount, 'nupay');
+              setFeedback({
+                type: 'ok',
+                text: `Recarga de ${formatCurrencyBRL(nuPayPrompt.amount)} aprovada pelo NuPay (${confirmation.transactionId}).`,
+              });
+            } else if (nuPayPrompt.kind === 'sub' && nuPayPrompt.planId) {
+              await onSubscribePlan(nuPayPrompt.planId, 'nupay');
+              setFeedback({
+                type: 'ok',
+                text: `Assinatura ativada pelo NuPay (${confirmation.transactionId}).`,
+              });
+            }
+          }}
+        />
+      )}
     </div>
   );
 }

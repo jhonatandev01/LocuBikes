@@ -61,6 +61,7 @@ export function RideHistoryView({ rides, onGoToMap }: RideHistoryViewProps) {
   const methodText = (method: RideRecord['paymentMethod']) => {
     if (method === 'carteira') return 'Carteira Digital';
     if (method === 'pix') return 'PIX';
+    if (method === 'nupay') return 'NuPay (Nubank)';
     if (method === 'cartao') return 'Cartão';
     return 'Assinatura Mensal';
   };
@@ -89,7 +90,7 @@ export function RideHistoryView({ rides, onGoToMap }: RideHistoryViewProps) {
       {/* Light Gamification Card */}
       <section
         aria-label="Nível e conquistas do ciclista"
-        className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-2xl p-6 space-y-5"
+        className="bg-white dark:bg-zinc-900 border border-zinc-200/90 dark:border-zinc-800 rounded-2xl p-6 space-y-5 card-elevated"
       >
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
           <div className="space-y-1">
@@ -142,7 +143,7 @@ export function RideHistoryView({ rides, onGoToMap }: RideHistoryViewProps) {
 
       {/* 4 KPI Summary Cards */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        <div className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-2xl p-4">
+        <div className="bg-white dark:bg-zinc-900 border border-zinc-200/90 dark:border-zinc-800 rounded-2xl p-4 card-elevated">
           <p className="text-xs text-zinc-500 dark:text-zinc-400 flex items-center gap-1.5">
             <Route className="w-3.5 h-3.5" aria-hidden="true" />
             Distância total
@@ -152,7 +153,7 @@ export function RideHistoryView({ rides, onGoToMap }: RideHistoryViewProps) {
           </p>
         </div>
 
-        <div className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-2xl p-4">
+        <div className="bg-white dark:bg-zinc-900 border border-zinc-200/90 dark:border-zinc-800 rounded-2xl p-4 card-elevated">
           <p className="text-xs text-zinc-500 dark:text-zinc-400 flex items-center gap-1.5">
             <Timer className="w-3.5 h-3.5" aria-hidden="true" />
             Tempo pedalado
@@ -162,7 +163,7 @@ export function RideHistoryView({ rides, onGoToMap }: RideHistoryViewProps) {
           </p>
         </div>
 
-        <div className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-2xl p-4">
+        <div className="bg-white dark:bg-zinc-900 border border-zinc-200/90 dark:border-zinc-800 rounded-2xl p-4 card-elevated">
           <p className="text-xs text-zinc-500 dark:text-zinc-400 flex items-center gap-1.5">
             <Flame className="w-3.5 h-3.5 text-amber-600 dark:text-amber-400" aria-hidden="true" />
             Calorias gastas
@@ -172,7 +173,7 @@ export function RideHistoryView({ rides, onGoToMap }: RideHistoryViewProps) {
           </p>
         </div>
 
-        <div className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-2xl p-4">
+        <div className="bg-white dark:bg-zinc-900 border border-zinc-200/90 dark:border-zinc-800 rounded-2xl p-4 card-elevated">
           <p className="text-xs text-zinc-500 dark:text-zinc-400 flex items-center gap-1.5">
             <Leaf className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" aria-hidden="true" />
             CO₂ evitado
@@ -234,7 +235,7 @@ export function RideHistoryView({ rides, onGoToMap }: RideHistoryViewProps) {
             {filteredRides.map((ride) => (
               <article
                 key={ride.id}
-                className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-2xl p-4 sm:p-5 flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-4"
+                className="bg-white dark:bg-zinc-900 border border-zinc-200/90 dark:border-zinc-800 rounded-2xl p-4 sm:p-5 flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-4 card-elevated card-lift"
               >
                 <div className="flex items-center gap-4 min-w-0">
                   <div className="w-20 h-16 rounded-xl overflow-hidden shrink-0">

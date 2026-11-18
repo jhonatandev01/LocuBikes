@@ -6,7 +6,16 @@ export type FrameSize = 'P' | 'M' | 'G' | 'Único';
 
 export type RentalUnit = 'hora' | 'dia';
 
-export type PaymentMethod = 'pix' | 'cartao' | 'presencial' | 'carteira' | 'assinatura';
+export type PaymentMethod = 'pix' | 'cartao' | 'nupay' | 'presencial' | 'carteira' | 'assinatura';
+
+export type NuPayFundingSource = 'saldo_nu' | 'credito_nu';
+
+export interface NuPayConfirmation {
+  transactionId: string;
+  fundingSource: NuPayFundingSource;
+  installments: number;
+  authorizedAt: string;
+}
 
 export type PaymentStatus = 'pago' | 'pendente' | 'estornado';
 
@@ -149,7 +158,7 @@ export interface ActiveSubscription {
   extraMinuteDiscountPct: number;
   startedAt: string;
   expiresAt: string;
-  paymentMethod: 'carteira' | 'pix' | 'cartao';
+  paymentMethod: 'carteira' | 'pix' | 'cartao' | 'nupay';
 }
 
 export type RideBillingMode = 'tempo' | 'assinatura';
@@ -173,7 +182,7 @@ export interface RideRecord {
   caloriesBurned: number;
   co2SavedKg: number;
   billingMode: RideBillingMode;
-  paymentMethod: 'carteira' | 'pix' | 'cartao' | 'assinatura';
+  paymentMethod: 'carteira' | 'pix' | 'cartao' | 'nupay' | 'assinatura';
   amountPaid: number;
   status: 'em_andamento' | 'concluida';
 }

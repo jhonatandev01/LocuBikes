@@ -1,9 +1,11 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {
+  calculateNuPayInstallments,
   calculateRideCost,
   calculateRideStats,
   formatDistanceBR,
+  generateNuPayTransactionId,
   getRiderLevel,
   haversineDistanceKm,
   parseBikeQrCode,
@@ -74,4 +76,21 @@ test('computes ride calories, distance, CO2 savings and rider level', () => {
   const lvl = getRiderLevel(26.4);
   assert.equal(lvl.levelName, 'Explorador Urbano');
   assert.equal(lvl.nextLevelName, 'Pedal Constante');
+});
+
+test('computes NuPay installment options, transaction id, and ride billing', () => {
+  const options = calculateNuPayInstallments(180);
+  assert.ok(options.some((o) => o.count === 6 && o.interestFree));
+  assert.ok(options.some((o) => o.count === 12 && !o.interestFree));
+
+  const txId = generateNuPayTransactionId(123456);
+  assert.equal(txId, 'NUPAY-123456NU');
+
+  const nupayRideCost = calculateRideCost({
+    hourlyRate: 30,
+    elapsedMinutes: 20,
+    billingMode: 'tempo',
+    paymentMethod: 'nupay',
+  });
+  assert.equal(nupayRideCost, 12.5);
 });

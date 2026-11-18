@@ -4,16 +4,23 @@ import type { Bike, BikeCategory } from '../types/bike';
 import { formatCurrencyBRL } from '../utils/pricing';
 import { HERO_IMAGE_URL } from '../utils/imagePresets';
 import { BikeImage } from './BikeImage';
+import { DeliveryPartnersMarquee } from './DeliveryPartnersMarquee';
 
 interface StorefrontViewProps {
   bikes: Bike[];
   onRentBike: (bike: Bike) => void;
   onOpenReservations?: () => void;
+  onOpenWallet?: () => void;
 }
 
 const CATEGORIES: ('Todas' | BikeCategory)[] = ['Todas', 'Urbana', 'Elétrica', 'Gravel', 'Estrada'];
 
-export function StorefrontView({ bikes, onRentBike, onOpenReservations }: StorefrontViewProps) {
+export function StorefrontView({
+  bikes,
+  onRentBike,
+  onOpenReservations,
+  onOpenWallet,
+}: StorefrontViewProps) {
   const [selectedCategory, setSelectedCategory] = useState<'Todas' | BikeCategory>('Todas');
   const [searchQuery, setSearchQuery] = useState('');
   const [onlyAvailable, setOnlyAvailable] = useState(false);
@@ -52,7 +59,11 @@ export function StorefrontView({ bikes, onRentBike, onOpenReservations }: Storef
   return (
     <div className="space-y-12 pb-16">
       {/* Section 1: Minimalist Editorial Hero */}
-      <section className="bg-white dark:bg-zinc-900/60 border-b border-zinc-200 dark:border-zinc-800 transition-colors">
+      <section className="relative overflow-hidden bg-white dark:bg-zinc-900 border-b border-zinc-200/80 dark:border-zinc-800/80 transition-colors">
+        <div
+          aria-hidden="true"
+          className="pointer-events-none absolute -top-20 right-10 w-80 h-80 rounded-full bg-emerald-400/12 dark:bg-emerald-500/10 blur-3xl"
+        />
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 lg:py-14">
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-12 items-stretch">
             <div className="lg:col-span-5 flex flex-col justify-center space-y-6">
@@ -64,12 +75,12 @@ export function StorefrontView({ bikes, onRentBike, onOpenReservations }: Storef
               </h1>
               <p className="text-base text-zinc-600 dark:text-zinc-300 leading-relaxed max-w-md">
                 Escolha entre modelos urbanos, elétricos, gravel e de estrada revisados antes de cada
-                retirada. Reserva imediata com pagamento via Pix ou cartão.
+                retirada. Reserva imediata com Pix, cartão ou NuPay.
               </p>
               <div className="flex flex-wrap items-center gap-3 pt-2">
                 <a
                   href="#catalogo"
-                  className="min-h-[44px] inline-flex items-center gap-2 px-5 py-3 text-sm font-medium text-white dark:text-zinc-950 bg-zinc-900 dark:bg-zinc-100 rounded-lg hover:bg-zinc-800 dark:hover:bg-white transition-colors whitespace-nowrap shrink-0"
+                  className="min-h-[44px] inline-flex items-center gap-2 px-5 py-3 text-sm font-medium text-white dark:text-zinc-950 bg-zinc-900 dark:bg-zinc-100 rounded-lg hover:bg-zinc-800 dark:hover:bg-white shadow-sm transition-colors whitespace-nowrap shrink-0"
                 >
                   Explorar modelos
                   <ArrowRight className="w-4 h-4" aria-hidden="true" />
@@ -87,7 +98,7 @@ export function StorefrontView({ bikes, onRentBike, onOpenReservations }: Storef
             </div>
 
             <div className="lg:col-span-7">
-              <div className="h-full min-h-[260px] lg:min-h-[380px] rounded-xl overflow-hidden border border-zinc-200 dark:border-zinc-800 bg-zinc-100 dark:bg-zinc-800">
+              <div className="h-full min-h-[260px] lg:min-h-[380px] rounded-2xl overflow-hidden border border-zinc-200/80 dark:border-zinc-800 bg-zinc-100 dark:bg-zinc-800 card-elevated">
                 <img
                   src={HERO_IMAGE_URL}
                   alt="Bicicleta urbana minimalista preta apoiada em parede arquitetônica de concreto"
@@ -127,6 +138,17 @@ export function StorefrontView({ bikes, onRentBike, onOpenReservations }: Storef
           </div>
         </div>
       </section>
+
+      {/* Moving Delivery Apps Section */}
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <DeliveryPartnersMarquee
+          onSelectCategory={(category) => {
+            setSelectedCategory(category);
+            document.getElementById('catalogo')?.scrollIntoView({ behavior: 'smooth' });
+          }}
+          onOpenPlans={onOpenWallet}
+        />
+      </div>
 
       {/* Section 2: Catalog & Filters */}
       <section id="catalogo" className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-8">
@@ -228,7 +250,7 @@ export function StorefrontView({ bikes, onRentBike, onOpenReservations }: Storef
                 <article
                   key={bike.id}
                   data-testid={`bike-card-${bike.id}`}
-                  className="group bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-xl overflow-hidden flex flex-col transition-all duration-200 hover:-translate-y-0.5 hover:border-zinc-300 dark:hover:border-zinc-700"
+                  className="group bg-white dark:bg-zinc-900 border border-zinc-200/90 dark:border-zinc-800 rounded-2xl overflow-hidden flex flex-col card-elevated card-lift hover:border-zinc-300 dark:hover:border-zinc-700"
                 >
                   <BikeImage src={bike.imageUrl} alt={`${bike.brand} ${bike.model}`} />
 

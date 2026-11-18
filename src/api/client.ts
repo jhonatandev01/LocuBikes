@@ -121,7 +121,7 @@ export async function fetchCompanyState(): Promise<CompanyStateResponse> {
 
 export async function topUpWalletApi(
   amount: number,
-  method: 'pix' | 'cartao'
+  method: 'pix' | 'cartao' | 'nupay'
 ): Promise<{ customerAccount: CustomerAccountState; transaction: Transaction }> {
   const res = await fetch('/api/customer/wallet/topup', {
     method: 'POST',
@@ -156,7 +156,7 @@ export async function removeCustomerCardApi(
 
 export async function subscribePlanApi(
   planId: SubscriptionPlan['id'],
-  paymentMethod: 'carteira' | 'pix' | 'cartao'
+  paymentMethod: 'carteira' | 'pix' | 'cartao' | 'nupay'
 ): Promise<{ customerAccount: CustomerAccountState }> {
   const res = await fetch('/api/customer/subscriptions', {
     method: 'POST',
@@ -175,7 +175,7 @@ export async function cancelSubscriptionApi(): Promise<{ customerAccount: Custom
 
 export async function unlockBikeByQrApi(input: {
   qrInput: string;
-  paymentMethod: 'carteira' | 'pix' | 'cartao' | 'assinatura';
+  paymentMethod: 'carteira' | 'pix' | 'cartao' | 'nupay' | 'assinatura';
 }): Promise<{ activeRide: RideRecord; bike: Bike; customerAccount: CustomerAccountState }> {
   const res = await fetch('/api/rides/unlock', {
     method: 'POST',

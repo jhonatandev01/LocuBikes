@@ -60,7 +60,7 @@ export function calculateRideCost(params: {
   billingMode: RideBillingMode;
   freeMinutesIncluded?: number;
   extraMinuteDiscountPct?: number;
-  paymentMethod: 'carteira' | 'pix' | 'cartao' | 'assinatura';
+  paymentMethod: 'carteira' | 'pix' | 'cartao' | 'nupay' | 'assinatura';
 }): number {
   const safeMinutes = Math.max(1, Math.ceil(params.elapsedMinutes));
   const perMinuteRate = Math.max(0.2, params.hourlyRate / 60);
@@ -80,6 +80,29 @@ export function calculateRideCost(params: {
     return roundCurrency(rawTotal * 0.95);
   }
   return roundCurrency(rawTotal);
+}
+
+export interface NuPayInstallmentOption {
+  count: number;
+  installmentValue: number;
+  interestFree: boolean;
+}
+
+export function calculateNuPayInstallments(totalAmount: number): NuPayInstallmentOption[] {
+  const safeAmount = Math.max(0, roundCurrency(totalAmount));
+  const counts = [1, 2, 3, 4, 6, 10, 12];
+  return counts
+    .filter((count) => count === 1 || safeAmount / count >= 10)
+    .map((count) => ({
+      count,
+      installmentValue: roundCurrency(safeAmount / count),
+      interestFree: count <= 6,
+    }));
+}
+
+export function generateNuPayTransactionId(seed = Date.now()): string {
+  const suffix = String(Math.abs(seed)).slice(-6).padStart(6, '0');
+  return `NUPAY-${suffix}NU`;
 }
 
 export function calculateRideStats(params: {

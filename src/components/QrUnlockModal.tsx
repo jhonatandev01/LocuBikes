@@ -3,13 +3,17 @@ import { Camera, Check, CreditCard, QrCode, ShieldCheck, Wallet, X } from 'lucid
 import type { Bike, CustomerAccountState } from '../types/bike';
 import { parseBikeQrCode, UNLOCK_FEE_BRL } from '../utils/mobility';
 import { formatCurrencyBRL } from '../utils/pricing';
+import { NuPayCheckoutModal } from './NuPayCheckoutModal';
 
 interface QrUnlockModalProps {
   bikes: Bike[];
   initialBike: Bike | null;
   customerAccount: CustomerAccountState;
   onClose: () => void;
-  onUnlock: (qrInput: string, paymentMethod: 'carteira' | 'pix' | 'cartao' | 'assinatura') => Promise<void>;
+  onUnlock: (
+    qrInput: string,
+    paymentMethod: 'carteira' | 'pix' | 'cartao' | 'nupay' | 'assinatura'
+  ) => Promise<void>;
   onGoToWallet: () => void;
 }
 
@@ -42,11 +46,13 @@ export function QrUnlockModal({
         ? 'cartao'
         : 'pix';
 
-  const [paymentMethod, setPaymentMethod] = useState<'carteira' | 'pix' | 'cartao' | 'assinatura'>(
-    defaultMethod
-  );
+  const [paymentMethod, setPaymentMethod] = useState<
+    'carteira' | 'pix' | 'cartao' | 'nupay' | 'assinatura'
+  >(defaultMethod);
   const [submitting, setSubmitting] = useState(false);
   const [errorMsg, setErrorMsg] = useState('');
+  const [nuPayOpen, setNuPayOpen] = useState(false);
+  const [nuPayUnlocked, setNuPayUnlocked] = useState(false);
 
   useEffect(() => {
     return () => {
@@ -102,6 +108,11 @@ export function QrUnlockModal({
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
     setErrorMsg('');
+    if (paymentMethod === 'nupay') {
+      setNuPayOpen(true);
+      return;
+    }
+
     setSubmitting(true);
     try {
       await onUnlock(qrInput, paymentMethod);
@@ -115,12 +126,12 @@ export function QrUnlockModal({
 
   return (
     <div
-      className="fixed inset-0 z-50 bg-zinc-950/60 backdrop-blur-[2px] flex items-end sm:items-center justify-center p-0 sm:p-4 overflow-y-auto"
+      className="fixed inset-0 z-50 bg-zinc-950/65 surface-glass flex items-end sm:items-center justify-center p-0 sm:p-4 overflow-y-auto"
       role="dialog"
       aria-modal="true"
       aria-labelledby="qr-unlock-title"
     >
-      <div className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-t-3xl sm:rounded-2xl w-full max-w-lg overflow-hidden my-0 sm:my-auto max-h-[92vh] flex flex-col">
+      <div className="bg-white/95 dark:bg-zinc-900/95 surface-glass border border-zinc-200/90 dark:border-zinc-800 rounded-t-3xl sm:rounded-2xl w-full max-w-lg overflow-hidden my-0 sm:my-auto max-h-[92vh] flex flex-col shadow-[0_28px_70px_-18px_rgba(9,9,11,0.34)]">
         <div className="px-6 py-4 border-b border-zinc-200 dark:border-zinc-800 flex items-center justify-between gap-4 shrink-0">
           <div className="flex items-center gap-2.5">
             <QrCode className="w-5 h-5 text-emerald-600 dark:text-emerald-400" aria-hidden="true" />
@@ -334,6 +345,28 @@ export function QrUnlockModal({
 
                 <button
                   type="button"
+                  onClick={() => setPaymentMethod('nupay')}
+                  className={`min-h-[50px] p-2.5 rounded-xl border text-left transition-all flex items-start gap-2.5 ${
+                    paymentMethod === 'nupay'
+                      ? 'border-[#820AD1] bg-purple-50/90 dark:bg-[#240C3D] shadow-[0_8px_20px_-10px_rgba(130,10,209,0.45)]'
+                      : 'border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-950 hover:border-purple-400'
+                  }`}
+                >
+                  <span className="w-6 h-5 rounded bg-[#820AD1] text-white font-display text-[10px] font-bold inline-flex items-center justify-center mt-0.5 shrink-0">
+                    Nu
+                  </span>
+                  <div>
+                    <p className="text-xs font-semibold text-zinc-900 dark:text-zinc-100">
+                      NuPay (Nubank)
+                    </p>
+                    <p className="text-[11px] text-[#820AD1] dark:text-purple-300">
+                      Débito NuConta ou Crédito
+                    </p>
+                  </div>
+                </button>
+
+                <button
+                  type="button"
                   onClick={() => setPaymentMethod('cartao')}
                   className={`min-h-[50px] p-2.5 rounded-xl border text-left transition-colors flex items-start gap-2.5 ${
                     paymentMethod === 'cartao'
@@ -377,13 +410,41 @@ export function QrUnlockModal({
             <button
               type="submit"
               disabled={submitting || !matchedBike || matchedBike.status !== 'disponivel'}
-              className="min-h-[44px] px-5 py-2 text-xs font-semibold text-white dark:text-zinc-950 bg-zinc-900 dark:bg-emerald-400 hover:bg-zinc-800 dark:hover:bg-emerald-300 disabled:opacity-50 rounded-xl transition-colors"
+              className={`min-h-[44px] px-5 py-2 text-xs font-semibold disabled:opacity-50 rounded-xl transition-colors ${
+                paymentMethod === 'nupay'
+                  ? 'text-white bg-[#820AD1] hover:bg-[#6D08B0]'
+                  : 'text-white dark:text-zinc-950 bg-zinc-900 dark:bg-emerald-400 hover:bg-zinc-800 dark:hover:bg-emerald-300'
+              }`}
             >
-              {submitting ? 'Desbloqueando...' : 'Desbloquear bicicleta'}
+              {submitting
+                ? 'Desbloqueando...'
+                : paymentMethod === 'nupay'
+                  ? 'Autorizar com NuPay'
+                  : 'Desbloquear bicicleta'}
             </button>
           </div>
         </form>
       </div>
+
+      {nuPayOpen && matchedBike && (
+        <NuPayCheckoutModal
+          open={nuPayOpen}
+          amount={UNLOCK_FEE_BRL}
+          title={`Desbloqueio QR · ${matchedBike.code}`}
+          subtitle={`${matchedBike.brand} ${matchedBike.model} (+ tarifa por min ao encerrar)`}
+          allowInstallments={false}
+          onClose={() => {
+            setNuPayOpen(false);
+            if (nuPayUnlocked) {
+              onClose();
+            }
+          }}
+          onAuthorize={async () => {
+            await onUnlock(qrInput, 'nupay');
+            setNuPayUnlocked(true);
+          }}
+        />
+      )}
     </div>
   );
 }

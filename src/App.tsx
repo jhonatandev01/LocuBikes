@@ -25,6 +25,7 @@ import { BookingModal } from './components/BookingModal';
 import { CompanyLoginModal } from './components/CompanyLoginModal';
 import { CustomerMapView } from './components/CustomerMapView';
 import { FleetManagerView } from './components/FleetManagerView';
+import { FloatingBikeOverlay } from './components/FloatingBikeOverlay';
 import { MobileBottomNav } from './components/MobileBottomNav';
 import { Navbar, type AppSection, type ThemeMode } from './components/Navbar';
 import { PaymentsView } from './components/PaymentsView';
@@ -212,7 +213,7 @@ export default function App() {
   // --- Customer Mobile Mobility Handlers ---
   const handleUnlockBikeByQr = async (
     qrInput: string,
-    paymentMethod: 'carteira' | 'pix' | 'cartao' | 'assinatura'
+    paymentMethod: 'carteira' | 'pix' | 'cartao' | 'nupay' | 'assinatura'
   ) => {
     const result = await unlockBikeByQrApi({ qrInput, paymentMethod });
     setCustomerAccount(result.customerAccount);
@@ -235,7 +236,7 @@ export default function App() {
     return result.completedRide;
   };
 
-  const handleTopUpWallet = async (amount: number, method: 'pix' | 'cartao') => {
+  const handleTopUpWallet = async (amount: number, method: 'pix' | 'cartao' | 'nupay') => {
     const result = await topUpWalletApi(amount, method);
     setCustomerAccount(result.customerAccount);
   };
@@ -257,7 +258,7 @@ export default function App() {
 
   const handleSubscribePlan = async (
     planId: SubscriptionPlan['id'],
-    paymentMethod: 'carteira' | 'pix' | 'cartao'
+    paymentMethod: 'carteira' | 'pix' | 'cartao' | 'nupay'
   ) => {
     const result = await subscribePlanApi(planId, paymentMethod);
     setCustomerAccount(result.customerAccount);
@@ -424,6 +425,7 @@ export default function App() {
                 onOpenReservations={
                   isCompanyMode ? undefined : () => setActiveSection('reservas')
                 }
+                onOpenWallet={isCompanyMode ? undefined : () => setActiveSection('carteira')}
               />
             )}
 
@@ -618,6 +620,8 @@ export default function App() {
           onLogin={handleCompanyLogin}
         />
       )}
+
+      <FloatingBikeOverlay />
     </div>
   );
 }

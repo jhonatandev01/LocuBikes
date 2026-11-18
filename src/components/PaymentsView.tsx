@@ -58,6 +58,7 @@ export function PaymentsView({ transactions }: PaymentsViewProps) {
 
   const formatMethod = (method: PaymentMethod, installments: number) => {
     if (method === 'pix') return 'Pix';
+    if (method === 'nupay') return installments > 1 ? `NuPay (${installments}x)` : 'NuPay';
     if (method === 'cartao') return `Cartão (${installments}x)`;
     if (method === 'carteira') return 'Carteira';
     if (method === 'assinatura') return 'Assinatura';
@@ -132,6 +133,7 @@ export function PaymentsView({ transactions }: PaymentsViewProps) {
             [
               { id: 'todos', label: 'Todos os métodos' },
               { id: 'pix', label: 'Pix' },
+              { id: 'nupay', label: 'NuPay' },
               { id: 'cartao', label: 'Cartão' },
               { id: 'carteira', label: 'Carteira' },
               { id: 'assinatura', label: 'Assinatura' },

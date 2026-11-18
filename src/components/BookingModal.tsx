@@ -1,6 +1,12 @@
 import { useMemo, useState } from 'react';
 import { Check, Copy, CreditCard, QrCode, Store, X } from 'lucide-react';
-import type { Bike, PaymentMethod, Rental, RentalUnit } from '../types/bike';
+import type {
+  Bike,
+  NuPayConfirmation,
+  PaymentMethod,
+  Rental,
+  RentalUnit,
+} from '../types/bike';
 import {
   calculateRentalBreakdown,
   formatCardExpiry,
@@ -13,6 +19,7 @@ import {
   validateCardPayment,
   validateCustomerForm,
 } from '../utils/pricing';
+import { NuPayCheckoutModal } from './NuPayCheckoutModal';
 import { PixQrCode } from './PixQrCode';
 
 interface BookingModalProps {
@@ -87,6 +94,8 @@ export function BookingModal({
   const [submitting, setSubmitting] = useState(false);
   const [pixCopied, setPixCopied] = useState(false);
   const [confirmedRental, setConfirmedRental] = useState<Rental | null>(null);
+  const [nuPayModalOpen, setNuPayModalOpen] = useState(false);
+  const [nuPayConfirmation, setNuPayConfirmation] = useState<NuPayConfirmation | null>(null);
 
   const breakdown = useMemo(() => {
     if (pendingRental) {
@@ -154,27 +163,22 @@ export function BookingModal({
     }
   };
 
-  const handleFinishBooking = async () => {
-    if (paymentMethod === 'cartao') {
-      const cardErrors = validateCardPayment({
-        cardNumber,
-        cardHolder,
-        expiry: cardExpiry,
-        cvv: cardCvv,
-      });
-      setErrors(cardErrors);
-      if (Object.keys(cardErrors).length > 0) return;
-    } else {
-      setErrors({});
-    }
-
+  const executeRentalSubmission = async (
+    methodOverride: PaymentMethod,
+    installmentsOverride: number
+  ) => {
     setSubmitting(true);
     setSubmitError('');
     try {
-      const last4 = paymentMethod === 'cartao' ? onlyDigits(cardNumber).slice(-4) : undefined;
+      const last4 = methodOverride === 'cartao' ? onlyDigits(cardNumber).slice(-4) : undefined;
       let result: Rental;
       if (pendingRental) {
-        result = await onSettlePendingPayment(pendingRental.id, paymentMethod, installments, last4);
+        result = await onSettlePendingPayment(
+          pendingRental.id,
+          methodOverride,
+          installmentsOverride,
+          last4
+        );
         setConfirmedRental(result);
         onSuccess(result, false);
       } else if (bike) {
@@ -189,8 +193,8 @@ export function BookingModal({
           pickupDate,
           includeInsurance,
           includePhoneMount,
-          paymentMethod,
-          installments,
+          paymentMethod: methodOverride,
+          installments: installmentsOverride,
           cardLast4: last4,
         });
         setConfirmedRental(result);
@@ -199,19 +203,44 @@ export function BookingModal({
       setStep('receipt');
     } catch (err) {
       setSubmitError(err instanceof Error ? err.message : 'Erro ao confirmar reserva.');
+      throw err;
     } finally {
       setSubmitting(false);
     }
   };
 
+  const handleFinishBooking = async () => {
+    if (paymentMethod === 'nupay') {
+      setErrors({});
+      setSubmitError('');
+      setNuPayModalOpen(true);
+      return;
+    }
+
+    if (paymentMethod === 'cartao') {
+      const cardErrors = validateCardPayment({
+        cardNumber,
+        cardHolder,
+        expiry: cardExpiry,
+        cvv: cardCvv,
+      });
+      setErrors(cardErrors);
+      if (Object.keys(cardErrors).length > 0) return;
+    } else {
+      setErrors({});
+    }
+
+    await executeRentalSubmission(paymentMethod, installments).catch(() => undefined);
+  };
+
   return (
     <div
-      className="fixed inset-0 z-50 bg-zinc-950/55 backdrop-blur-[2px] flex items-center justify-center p-4 overflow-y-auto"
+      className="fixed inset-0 z-50 bg-zinc-950/60 surface-glass flex items-center justify-center p-4 overflow-y-auto"
       role="dialog"
       aria-modal="true"
       aria-labelledby="booking-modal-title"
     >
-      <div className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-xl w-full max-w-2xl overflow-hidden my-auto">
+      <div className="bg-white/95 dark:bg-zinc-900/95 surface-glass border border-zinc-200/90 dark:border-zinc-800 rounded-2xl w-full max-w-2xl overflow-hidden my-auto shadow-[0_28px_70px_-18px_rgba(9,9,11,0.32)]">
         {/* Modal Header */}
         <div className="px-6 py-4 border-b border-zinc-200 dark:border-zinc-800 flex items-center justify-between gap-4">
           <div className="min-w-0">
@@ -499,13 +528,13 @@ export function BookingModal({
         {step === 'payment' && breakdown && (
           <div className="p-6 space-y-6 max-h-[80vh] overflow-y-auto">
             {/* Payment Method Selector */}
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+            <div className={`grid grid-cols-1 sm:grid-cols-2 ${!isSettleMode ? 'lg:grid-cols-4' : 'sm:grid-cols-3'} gap-3`}>
               <button
                 type="button"
                 onClick={() => setPaymentMethod('pix')}
-                className={`p-3.5 rounded-lg border text-left transition-colors ${
+                className={`p-3.5 rounded-xl border text-left transition-all ${
                   paymentMethod === 'pix'
-                    ? 'border-zinc-900 dark:border-emerald-400 bg-zinc-50 dark:bg-zinc-800/80'
+                    ? 'border-zinc-900 dark:border-emerald-400 bg-zinc-50 dark:bg-zinc-800/80 shadow-sm'
                     : 'border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 hover:border-zinc-300 dark:hover:border-zinc-700'
                 }`}
               >
@@ -523,10 +552,31 @@ export function BookingModal({
 
               <button
                 type="button"
+                onClick={() => setPaymentMethod('nupay')}
+                className={`p-3.5 rounded-xl border text-left transition-all ${
+                  paymentMethod === 'nupay'
+                    ? 'border-[#820AD1] bg-purple-50/90 dark:bg-[#240C3D] shadow-[0_10px_24px_-10px_rgba(130,10,209,0.45)]'
+                    : 'border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 hover:border-purple-400 dark:hover:border-purple-700'
+                }`}
+              >
+                <div className="flex items-center justify-between">
+                  <span className="w-6 h-5 rounded-md bg-[#820AD1] text-white font-display text-[11px] font-bold inline-flex items-center justify-center">
+                    Nu
+                  </span>
+                  <span className="text-[11px] font-semibold text-[#820AD1] dark:text-purple-300">
+                    Até 12x
+                  </span>
+                </div>
+                <p className="mt-2 text-sm font-semibold text-zinc-900 dark:text-zinc-50">NuPay</p>
+                <p className="text-xs text-zinc-500 dark:text-zinc-400">App Nubank · Sem CVV</p>
+              </button>
+
+              <button
+                type="button"
                 onClick={() => setPaymentMethod('cartao')}
-                className={`p-3.5 rounded-lg border text-left transition-colors ${
+                className={`p-3.5 rounded-xl border text-left transition-all ${
                   paymentMethod === 'cartao'
-                    ? 'border-zinc-900 dark:border-emerald-400 bg-zinc-50 dark:bg-zinc-800/80'
+                    ? 'border-zinc-900 dark:border-emerald-400 bg-zinc-50 dark:bg-zinc-800/80 shadow-sm'
                     : 'border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 hover:border-zinc-300 dark:hover:border-zinc-700'
                 }`}
               >
@@ -541,9 +591,9 @@ export function BookingModal({
                 <button
                   type="button"
                   onClick={() => setPaymentMethod('presencial')}
-                  className={`p-3.5 rounded-lg border text-left transition-colors ${
+                  className={`p-3.5 rounded-xl border text-left transition-all ${
                     paymentMethod === 'presencial'
-                      ? 'border-zinc-900 dark:border-emerald-400 bg-zinc-50 dark:bg-zinc-800/80'
+                      ? 'border-zinc-900 dark:border-emerald-400 bg-zinc-50 dark:bg-zinc-800/80 shadow-sm'
                       : 'border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 hover:border-zinc-300 dark:hover:border-zinc-700'
                   }`}
                 >
@@ -699,6 +749,33 @@ export function BookingModal({
               </div>
             )}
 
+            {paymentMethod === 'nupay' && (
+              <div className="relative overflow-hidden p-5 rounded-2xl bg-gradient-to-br from-[#820AD1] to-[#5B0596] text-white shadow-[0_18px_40px_-14px_rgba(130,10,209,0.55)] space-y-3">
+                <div
+                  aria-hidden="true"
+                  className="pointer-events-none absolute -top-10 -right-10 w-36 h-36 rounded-full bg-purple-300/25 blur-2xl"
+                />
+                <div className="relative flex items-center justify-between gap-3">
+                  <div className="flex items-center gap-2.5">
+                    <span className="w-8 h-8 rounded-xl bg-white/15 border border-white/25 font-display font-bold text-sm flex items-center justify-center">
+                      Nu
+                    </span>
+                    <div>
+                      <p className="text-sm font-semibold">Pagamento direto com NuPay</p>
+                      <p className="text-xs text-purple-100/85">
+                        Use seu saldo da conta ou limite extra do cartão Nubank
+                      </p>
+                    </div>
+                  </div>
+                </div>
+                <p className="relative text-xs text-purple-100/90 leading-relaxed">
+                  Ao clicar em <strong>Pagar com NuPay</strong>, o simulador oficial Nubank será aberto
+                  para você escolher débito em conta ou parcelamento em até 12x e confirmar com
+                  biometria ou senha de 4 dígitos.
+                </p>
+              </div>
+            )}
+
             {paymentMethod === 'presencial' && (
               <div className="p-5 bg-zinc-50 dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 rounded-xl space-y-2">
                 <p className="text-sm font-medium text-zinc-900 dark:text-zinc-50">
@@ -744,13 +821,19 @@ export function BookingModal({
                   type="button"
                   disabled={submitting}
                   onClick={handleFinishBooking}
-                  className="px-5 py-2.5 text-xs font-medium text-white dark:text-zinc-950 bg-zinc-900 dark:bg-zinc-100 rounded-lg hover:bg-zinc-800 dark:hover:bg-white disabled:opacity-60 transition-colors"
+                  className={`px-5 py-2.5 text-xs font-semibold rounded-lg disabled:opacity-60 transition-colors ${
+                    paymentMethod === 'nupay'
+                      ? 'text-white bg-[#820AD1] hover:bg-[#6D08B0] shadow-[0_8px_20px_-8px_rgba(130,10,209,0.65)]'
+                      : 'text-white dark:text-zinc-950 bg-zinc-900 dark:bg-zinc-100 hover:bg-zinc-800 dark:hover:bg-white'
+                  }`}
                 >
                   {submitting
                     ? 'Processando...'
-                    : paymentMethod === 'presencial'
-                      ? 'Confirmar Reserva'
-                      : 'Confirmar Pagamento'}
+                    : paymentMethod === 'nupay'
+                      ? 'Pagar com NuPay'
+                      : paymentMethod === 'presencial'
+                        ? 'Confirmar Reserva'
+                        : 'Confirmar Pagamento'}
                 </button>
               </div>
             </div>
@@ -800,9 +883,16 @@ export function BookingModal({
                 <div>
                   <span className="text-zinc-500 dark:text-zinc-400 block">Pagamento</span>
                   <span className="font-medium text-zinc-900 dark:text-zinc-100 uppercase">
-                    {confirmedRental.paymentMethod}
+                    {confirmedRental.paymentMethod === 'nupay'
+                      ? `NuPay (${confirmedRental.installments}x)`
+                      : confirmedRental.paymentMethod}
                     {confirmedRental.cardLast4 ? ` (final ${confirmedRental.cardLast4})` : ''}
                   </span>
+                  {nuPayConfirmation && (
+                    <span className="block font-mono text-[11px] text-[#820AD1] dark:text-purple-300 mt-0.5">
+                      Auth {nuPayConfirmation.transactionId}
+                    </span>
+                  )}
                 </div>
               </div>
             </div>
@@ -819,6 +909,22 @@ export function BookingModal({
           </div>
         )}
       </div>
+
+      {nuPayModalOpen && breakdown && (
+        <NuPayCheckoutModal
+          open={nuPayModalOpen}
+          amount={breakdown.totalAmount}
+          title={`Locação · ${titleModel}`}
+          subtitle={`${duration} ${rentalUnit === 'hora' ? 'hora(s)' : 'dia(s)'} · Retirada ${pickupDate}`}
+          customerLabel={customerName ? `${customerName} · Nubank` : 'Conta Nubank ••• 4829'}
+          allowInstallments
+          onClose={() => setNuPayModalOpen(false)}
+          onAuthorize={async (confirmation) => {
+            setNuPayConfirmation(confirmation);
+            await executeRentalSubmission('nupay', confirmation.installments);
+          }}
+        />
+      )}
     </div>
   );
 }
