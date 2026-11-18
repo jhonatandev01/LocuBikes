@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { Menu, Moon, Sun, X } from 'lucide-react';
+import { PWAInstallButton } from './PWAInstallButton';
 
 export type AppSection =
   | 'mapa'
@@ -99,8 +100,9 @@ export function Navbar({
           })}
         </nav>
 
-        {/* Zone 3: Theme Switch + Primary Action */}
+        {/* Zone 3: Install App + Theme Switch + Primary Action */}
         <div className="flex items-center gap-2.5 sm:gap-3 shrink-0">
+          <PWAInstallButton />
           <button
             type="button"
             onClick={onToggleTheme}

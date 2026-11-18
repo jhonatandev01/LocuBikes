@@ -1,0 +1,24 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
+  <rect width="512" height="512" rx="112" fill="#0A224A" />
+  <circle cx="256" cy="224" r="106" fill="none" stroke="#FFFFFF" stroke-width="26" />
+  <circle cx="256" cy="224" r="78" fill="none" stroke="#00A859" stroke-width="14" />
+  <g stroke="#00A859" stroke-width="9" stroke-linecap="round">
+    <line x1="256" y1="148" x2="256" y2="300" />
+    <line x1="180" y1="224" x2="332" y2="224" />
+    <line x1="202" y1="170" x2="310" y2="278" />
+    <line x1="310" y1="170" x2="202" y2="278" />
+  </g>
+  <circle cx="256" cy="224" r="16" fill="#0A224A" stroke="#00A859" stroke-width="10" />
+  <text
+    x="256"
+    y="404"
+    text-anchor="middle"
+    fill="#FFFFFF"
+    font-family="system-ui, -apple-system, 'Segoe UI', sans-serif"
+    font-size="62"
+    font-weight="700"
+    letter-spacing="-1.5"
+  >
+    Locu<tspan fill="#34D399">Bikes</tspan>
+  </text>
+</svg>

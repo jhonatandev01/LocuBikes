@@ -28,6 +28,7 @@ import { FleetManagerView } from './components/FleetManagerView';
 import { FloatingBikeOverlay } from './components/FloatingBikeOverlay';
 import { MobileBottomNav } from './components/MobileBottomNav';
 import { Navbar, type AppSection, type ThemeMode } from './components/Navbar';
+import { OfflineIndicator } from './components/OfflineIndicator';
 import { PaymentsView } from './components/PaymentsView';
 import { QrUnlockModal } from './components/QrUnlockModal';
 import { ReservationsView } from './components/ReservationsView';
@@ -622,6 +623,7 @@ export default function App() {
       )}
 
       <FloatingBikeOverlay />
+      <OfflineIndicator />
     </div>
   );
 }
